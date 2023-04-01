@@ -1,0 +1,92 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: adb-pv-volume
+  labels:
+    type: local
+spec:
+  storageClassName: local-storage
+  claimRef:
+    name: adb-pv-claim
+    namespace: protean-provider
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  local:
+    path: /dev/bus/usb
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - k8s-node2
+          - k8s-node1
+          - k8s-node3
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: adb-pv-claim
+  namespace: protean-provider
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+
+
+
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: adb-nfs-pv-volume-root
+spec:
+  storageClassName: nfs
+  claimRef:
+    name: adb-nfs-pv-claim-root
+    namespace: protean-provider
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  mountOptions:
+    - hard
+  claimRef:
+    name: adb-nfs-pv-claim-root
+    namespace: protean-provider
+  nfs:
+    path: /var/nfsshare/stf-provider/adb-nfs-data/root
+    server: 192.168.12.56
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: adb-nfs-pv-claim-root
+  namespace: protean-provider
+spec:
+  storageClassName: nfs
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+
+
